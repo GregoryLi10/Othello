@@ -87,12 +87,14 @@ public class Othello {
 						splashScreen=false;
 						gameOngoing=true;
 						turn=false;
+						game_over=false;
 						board = new Board(boardSquares);
 						board.getMoves(turn);
 					} else if (x>=3*button[0]+xadjust-button[2]/2&&x<=3*button[0]+xadjust-button[2]/2+button[2]&&y>=button[1]+yadjust&&y<=button[1]+yadjust+button[3]) {
 						splashScreen=false;
 						gameOngoing=true;
 						turn=false;
+						game_over=false;
 						board = new Board(boardSquares);
 						board.getMoves(turn);
 					}
@@ -163,6 +165,7 @@ public class Othello {
 			public void keyPressed(KeyEvent e) {
 				int key = e.getKeyCode();
 
+				if(!splashScreen) {
 			    if (key == KeyEvent.VK_LEFT) {
 			    	try {
 				    	board.undo();
@@ -204,6 +207,7 @@ public class Othello {
 			    		frame.getContentPane().repaint();
 			    	}
 			    }
+				}
 			    
 			    if (key == KeyEvent.VK_ESCAPE&&gameOngoing) {
 			    	splashScreen=!splashScreen;
