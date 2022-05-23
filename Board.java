@@ -196,6 +196,103 @@ public class Board {
 		return list;
 	}
 	
+	public int getMovesSize(boolean turn) { 
+		int moves=0;
+		for (int i=0; i<board.length; i++) {
+			for (int j=0; j<board[i].length; j++) {
+				if (board[i][j].getState()==null||board[i][j].getState()!=turn) continue; //guard until same color dot appears
+				boolean[] inval=new boolean[8];
+				for (Direction dir: Direction.values()) {
+					switch (dir) {
+					case UP: 
+						if (j-1<0||board[i][j-1].getState()==null||board[i][j-1].getState()==turn) break; 
+						for (int c=2; c<board.length; c++) {
+							if (j-c<0||inval[0]) break;
+							if (board[i][j-c].getState()==null) {
+								moves++;
+								break;
+							}
+							inval[0]=board[i][j-c].getState()==turn;
+						}
+					case DOWN:
+						if (j+1>=board.length||board[i][j+1].getState()==null||board[i][j+1].getState()==turn) break; 
+						for (int c=2; c<board.length; c++) {
+							if (j+c>=board.length||inval[1]) break;
+							if (board[i][j+c].getState()==null) {
+								moves++;
+								break;
+							}
+							inval[1]=board[i][j+c].getState()==turn;
+						}
+					case LEFT:
+						if (i-1<0||board[i-1][j].getState()==null||board[i-1][j].getState()==turn) break; 
+						for (int c=2; c<board.length; c++) {
+							if (i-c<0||inval[2]) break;
+							if (board[i-c][j].getState()==null) {
+								moves++;
+								break;
+							}
+							inval[2]=board[i-c][j].getState()==turn;
+						}
+					case RIGHT: 
+						if (i+1>=board.length||board[i+1][j].getState()==null||board[i+1][j].getState()==turn) break; 
+						for (int c=2; c<board.length; c++) {
+							if (i+c>=board.length||inval[3]) break;
+							if (board[i+c][j].getState()==null) {
+								moves++;
+								break;
+							}
+							inval[3]=board[i+c][j].getState()==turn;
+						}
+					case UPLEFT:
+						if (i-1<0||j-1<0||board[i-1][j-1].getState()==null||board[i-1][j-1].getState()==turn) break; 
+						for (int c=2; c<board.length; c++) {
+							if (i-c<0||j-c<0||inval[4]) break;
+							if (board[i-c][j-c].getState()==null) {
+								moves++;
+								break;
+							}
+							inval[4]=board[i-c][j-c].getState()==turn;
+						}
+					case UPRIGHT: 
+						if (i+1>=board.length||j-1<0||board[i+1][j-1].getState()==null||board[i+1][j-1].getState()==turn) break; 
+						for (int c=2; c<board.length; c++) {
+							if (i+c>=board.length||j-c<0||inval[5]) break;
+							if (board[i+c][j-c].getState()==null) {
+								moves++;
+								break;
+							}
+							inval[5]=board[i+c][j-c].getState()==turn;
+						}
+					case DOWNLEFT:
+						if (i-1<0||j+1>=board.length||board[i-1][j+1].getState()==null||board[i-1][j+1].getState()==turn) break; 
+						for (int c=2; c<board.length; c++) {
+							if (i-c<0||j+c>=board.length||inval[6]) break;
+							if (board[i-c][j+c].getState()==null) {
+								moves++;
+								break;
+							}
+							inval[6]=board[i-c][j+c].getState()==turn;
+						}
+					case DOWNRIGHT:
+						if (i+1>=board.length||j+1>=board.length||board[i+1][j+1].getState()==null||board[i+1][j+1].getState()==turn) break; 
+						for (int c=2; c<board.length; c++) {
+							if (i+c>=board.length||j+c>=board.length||inval[7]) break;
+							if (board[i+c][j+c].getState()==null) {
+								moves++;
+								break;
+							}
+							inval[7]=board[i+c][j+c].getState()==turn;
+						}
+					default:
+						break;
+					} //switch
+				} //for each dir
+			} //for j
+		} //for i
+		return moves;
+	}
+	
 	public Square[][] getBoard(){
 		return board;
 	}
@@ -240,12 +337,23 @@ public class Board {
 		return score;
 	}
 	
-	public boolean gameOver(boolean turn) {	// check if no moves for 2 moves in a row // check if no nulls
-		if (getMoves(turn).size()==0&&getMoves(!turn).size()==0)
+	public boolean gameOver() {	// check if no moves for 2 moves in a row // check if no nulls
+		if (getMovesSize(true)==0&&getMovesSize(false)==0)
 			return true;
 		for (Square[] row:board)
 			for (Square sqr:row)
 				if (sqr.getState()==null) return false;
 		return true;
+	}
+	
+	public String toString() {
+		StringBuilder sb=new StringBuilder();
+		for (Square[] row:board) {
+//			for (Square cell:row)
+//				sb.append(cell.getState()==null?"N":cell.getState()?"W":"B");
+				sb.append(Arrays.toString(row));
+			sb.append("\n");
+		}
+		return sb.toString();
 	}
 }

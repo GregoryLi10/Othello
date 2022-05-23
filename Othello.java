@@ -36,6 +36,46 @@ public class Othello {
 	
 	private int[] button=new int[] {width/4, width*5/7, width/4, width/8};
 	
+	private AI ai;
+	
+	private Entry<ArrayList<Integer>, ArrayList<ArrayList<Integer>>> aiMove=null;
+	
+	private Thread thread=new Thread(){
+		@Override
+		public void run() {
+			Board temp=board;
+			while(true) {
+				try {
+					Thread.sleep(25);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+//				System.out.println(temp+"\n");
+				if (!board.equals(temp)) {
+					Long time=System.currentTimeMillis();
+					temp=new BoardState(board.getBoard());
+					aiMove=ai.bestMove(board, turn);
+					System.out.println(aiMove);
+					if (mode&&turn==ai.team) {
+						while (System.currentTimeMillis()-time<500) {
+							try {
+								Thread.sleep(1);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+						board.place(aiMove.getKey().get(0), aiMove.getKey().get(1), turn, aiMove.getValue());
+						turn=!turn;
+						board.getMoves(turn);
+						frame.getContentPane().repaint();
+					}
+				}
+			}
+		}
+	};
+	
 	public static void main(String[] args) {
 		new Othello(); 
 	}
@@ -46,8 +86,8 @@ public class Othello {
 		frame.setSize(width+2, width+24);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		board.getMoves(turn);
-		AI ai=new AI(board, false);
-//		System.out.println(Arrays.toString(ai.bestMove(board, turn)));
+		ai=new AI(board, true);
+		thread.start();
 		JPanel canvas = new JPanel() {
 			public void paint(Graphics g) {
 				width = frame.getWidth()<frame.getHeight()?frame.getWidth():frame.getHeight()-24; //sets new width when resized
@@ -63,11 +103,11 @@ public class Othello {
 					g.setFont(new Font("Calibri", Font.BOLD, width/15));
 					g.drawString("Othello/Reversi", width/2-g.getFontMetrics().stringWidth("Othello/Reversi")/2+xadjust, width/4+yadjust);
 					g.setFont(new Font("Calibri", Font.BOLD, width/25));
-					g.drawString("Press esc to re-open this splashscreen", width/2-g.getFontMetrics().stringWidth("Press esc to re-open this splashscreen")/2+xadjust, width/3+yadjust);
 					if (game_over) {
 						g.drawString(board.score()[0]+"-"+board.score()[1], width/2-g.getFontMetrics().stringWidth(board.score()[0]+"-"+board.score()[1])/2+xadjust, width/9+yadjust);
 						g.drawString(board.score()[0]==board.score()[1]?"Draw!":board.score()[0]>board.score()[1]?"Black wins!":"White wins!", width/2-g.getFontMetrics().stringWidth(board.score()[0]==board.score()[1]?"Draw!":board.score()[0]>board.score()[1]?"Black wins!":"White wins!")/2+xadjust, width/6+yadjust);
-					}
+						g.drawString("Press esc to review game", width/2-g.getFontMetrics().stringWidth("Press esc to review game")/2+xadjust, width/3+yadjust);
+					} else g.drawString("Press esc to re-open this splashscreen", width/2-g.getFontMetrics().stringWidth("Press esc to re-open this splashscreen")/2+xadjust, width/3+yadjust);
 					g.setColor(Color.black);
 					g.drawString("1 Player", button[0]-g.getFontMetrics().stringWidth("1 Player")/2+xadjust, button[1]+button[3]/2+width/60+yadjust);
 					g.drawString("2 Player", 3*button[0]-g.getFontMetrics().stringWidth("2 Player")/2+xadjust, button[1]+button[3]/2+width/60+yadjust);
@@ -95,6 +135,7 @@ public class Othello {
 						gameOngoing=true;
 						turn=false;
 						game_over=false;
+						mode=false;
 						board = new Board(boardSquares);
 						board.getMoves(turn);
 					}
@@ -102,45 +143,69 @@ public class Othello {
 				}
 				else
 				if (!game_over) {
+					if (mode) {
+						HashMap<ArrayList<Integer>, ArrayList<ArrayList<Integer>>> moves=(HashMap<ArrayList<Integer>, ArrayList<ArrayList<Integer>>>)board.getMoves(turn).clone();
+						if (turn!=ai.team) {
+							if (moves.isEmpty()) {
+								noMoves=true;
+								JOptionPane.showMessageDialog(null, "You have no moves!");
+								turn=!turn;
+								board.getMoves(turn);
+								frame.getContentPane().repaint();
+								return;
+							}
+							int x=(e.getX()-xadjust)/SQUARE_WIDTH, y=(e.getY()-yadjust)/SQUARE_WIDTH;
+							if (y>=boardSquares||y<0||x>=boardSquares||x<0) return;
+							Square clicked=board.getBoard()[x][y];
+							if (clicked.getState()==null) {
+								Entry<ArrayList<Integer>, ArrayList<ArrayList<Integer>>> temp=null;
+								for (Entry<ArrayList<Integer>, ArrayList<ArrayList<Integer>>> entry:moves.entrySet()) 
+									if (entry.getKey().equals(new ArrayList<Integer>(Arrays.asList(x,y)))) { 
+										temp=entry;
+										break;
+									}
+								if (temp==null) return;
+								noMoves=false;
+								board.place(x, y, turn, temp.getValue());
+								turn=!turn;
+								board.getMoves(turn);
+							}
+						}
+					}
+					else {
+					HashMap<ArrayList<Integer>, ArrayList<ArrayList<Integer>>> moves=(HashMap<ArrayList<Integer>, ArrayList<ArrayList<Integer>>>)board.getMoves(turn).clone();
+					if (moves.isEmpty()) {
+						noMoves=true;
+						JOptionPane.showMessageDialog(null, "You have no moves!");
+						turn=!turn;
+						board.getMoves(turn);
+						frame.getContentPane().repaint();
+						return;
+					}
 					int x=(e.getX()-xadjust)/SQUARE_WIDTH, y=(e.getY()-yadjust)/SQUARE_WIDTH;
 					if (y>=boardSquares||y<0||x>=boardSquares||x<0) return;
 					Square clicked=board.getBoard()[x][y];
 					if (clicked.getState()==null) {
-						HashMap<ArrayList<Integer>, ArrayList<ArrayList<Integer>>> moves=(HashMap<ArrayList<Integer>, ArrayList<ArrayList<Integer>>>)board.getMoves(turn).clone();
-						System.out.println(moves);
-						if (noMoves&&moves.isEmpty()) {
-							game_over=true;
-							return;
-						} else if (moves.isEmpty()) {
-							noMoves=true;
-							JOptionPane.showMessageDialog(null, "You have no moves!");
-							turn=!turn;
-							board.getMoves(turn);
-							frame.getContentPane().repaint();
-							return;
-						}
-						
-						boolean valid=false; ArrayList<int[]> index=new ArrayList<int[]>();
 						Entry<ArrayList<Integer>, ArrayList<ArrayList<Integer>>> temp=null;
 						for (Entry<ArrayList<Integer>, ArrayList<ArrayList<Integer>>> entry:moves.entrySet()) 
 							if (entry.getKey().equals(new ArrayList<Integer>(Arrays.asList(x,y)))) { 
-								valid=true;
 								temp=entry;
 								break;
 							}
-						if (!valid) return;
+						if (temp==null) return;
 						noMoves=false;
 						board.place(x, y, turn, temp.getValue());
 						turn=!turn;
 						board.getMoves(turn);
-						if (board.gameOver(turn)) {
-							game_over=true;
-							splashScreen=true;
-						}
+//						System.out.println(ai.bestMove(board, turn));
+					}
 					}
 				}
-				
 				frame.getContentPane().repaint();
+				if (board.gameOver()) {
+					game_over=true;
+					splashScreen=true;
+				}
 			}
 			
 			@Override
